@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Publisher Health Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Inria+Serif:ital,wght@1,400;1,700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['"Inria Serif"', 'serif'] },
+    colors: {
+      ink:     '#1B043F',
+      muted:   '#5B5773',
+      line:    '#D3DCF2',
+      canvas:  '#F5F7FC',
+      primary: { DEFAULT: '#FF4F00', hover: '#E04500', soft: '#FFEDE5' },
+      grape:   { DEFAULT: '#611BC5', hover: '#4E139F', soft: '#EFE7FB' },
+      info:    { DEFAULT: '#0066FF', soft: '#E5F0FF' },
+      accent:  '#F971FF',
+      ok:      { DEFAULT: '#0F8A5F', soft: '#E3F4EC' },
+      warn:    { DEFAULT: '#B86E00', soft: '#FFF3DC' },
+      danger:  { DEFAULT: '#D6283B', soft: '#FCE6E8' }
+    }
+  } }
+}
+</script>
+<style>
+  /* Allow tables to scroll gracefully horizontally */
+  .table-scroll::-webkit-scrollbar { height: 8px; }
+  .table-scroll::-webkit-scrollbar-track { background: #F5F7FC; border-radius: 4px; }
+  .table-scroll::-webkit-scrollbar-thumb { background: #D3DCF2; border-radius: 4px; }
+  .table-scroll::-webkit-scrollbar-thumb:hover { background: #5B5773; }
+</style>
+</head>
+<body class="bg-canvas text-ink font-sans antialiased min-h-screen">
+
+  <header class="bg-ink text-white">
+    <div class="h-1 bg-gradient-to-r from-grape to-primary"></div>
+    <div class="h-16 flex items-center justify-between max-w-7xl mx-auto px-6">
+      <div class="flex items-center gap-3">
+        <svg class="h-5 w-auto shrink-0" aria-label="Logo" width="124" height="25" viewBox="0 0 124 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M54.4316 0C53.827 0 53.2579 0.236658 52.8301 0.667884L48.0652 5.4622C47.6374 5.89263 47.4014 6.46442 47.4014 7.07354C47.4014 7.68265 47.6366 8.25445 48.0652 8.68488C48.493 9.11531 49.062 9.35276 49.6666 9.35276C50.2712 9.35276 50.8403 9.1161 51.2681 8.68488L56.033 3.88977C56.4608 3.45934 56.6968 2.88675 56.6968 2.27843C56.6968 1.67011 56.4608 1.09752 56.033 0.66709C55.6052 0.236658 55.037 0 54.4316 0ZM53.22 0.447903C53.1308 0.507465 53.0456 0.574968 52.9651 0.64803C53.0456 0.574174 53.1308 0.507465 53.22 0.447903ZM51.2129 8.62929C51.1355 8.70711 51.0534 8.77859 50.9666 8.84291C51.0526 8.77859 51.1347 8.70711 51.2129 8.62929ZM89.7006 0.357818H65.6762C64.471 0.357818 63.4907 1.34416 63.4907 2.55683C63.4907 3.76951 64.471 4.75585 65.6762 4.75585H74.2708C74.9622 4.78682 75.5044 5.35623 75.5044 6.05191V22.7816C75.525 24.0991 76.6268 24.8861 77.6797 24.8861C78.0767 24.8861 78.6576 24.7765 79.1746 24.2571C79.563 23.8664 79.7832 23.347 79.795 22.8014V6.0535C79.795 5.37052 80.3783 4.7892 81.0958 4.75743H89.7006C90.9058 4.75743 91.8861 3.7703 91.8861 2.55763C91.8861 1.34495 90.9058 0.358612 89.7006 0.358612V0.357818ZM21.4418 4.75791H5.59211L5.59053 4.75871C4.89911 4.78968 4.35687 5.3583 4.35687 6.05477V10.3035L16.5411 10.3019C17.7464 10.3019 18.7267 11.2883 18.7267 12.5009C18.7267 13.7136 17.7464 14.6999 16.5411 14.6999H4.35766V18.9383C4.35766 19.6539 4.93621 20.2368 5.64815 20.2368L21.441 20.2431C22.647 20.2431 23.6273 21.2295 23.6273 22.4422C23.6273 23.6548 22.647 24.6412 21.4418 24.6412H1.45229C0.651163 24.6412 0 23.986 0 23.1799V1.82034C0 1.01506 0.651163 0.35909 1.45229 0.35909H21.4418C22.647 0.35909 23.6273 1.34543 23.6273 2.5581C23.6273 3.77078 22.647 4.75791 21.4418 4.75791ZM105.14 20.236L120.933 20.2423V20.2431C122.139 20.2431 123.119 21.2295 123.119 22.4422C123.119 23.6548 122.139 24.6412 120.934 24.6412H100.944C100.143 24.6412 99.4918 23.986 99.4918 23.1799V1.82034C99.4918 1.01506 100.143 0.35909 100.944 0.35909H120.934C122.139 0.35909 123.119 1.34543 123.119 2.5581C123.119 3.77078 122.139 4.75791 120.934 4.75791H105.084C104.392 4.78889 103.849 5.3575 103.849 6.05398V10.3027L116.034 10.3011C117.239 10.3011 118.219 11.2875 118.219 12.5001C118.219 13.7128 117.239 14.6991 116.034 14.6991H103.849V18.9376C103.849 19.6531 104.428 20.236 105.14 20.236ZM37.2799 16.3152C37.7077 15.8848 38.276 15.6474 38.8814 15.6474C39.4868 15.6474 40.055 15.8848 40.4828 16.3152C40.9098 16.7449 41.1451 17.3175 41.1451 17.9266C41.1451 18.5357 40.9098 19.1083 40.4828 19.5379L35.7179 24.3322C35.2901 24.7635 34.721 25.0001 34.1164 25.0001C33.5118 25.0001 32.9428 24.7627 32.515 24.3322C31.6318 23.4436 31.6318 21.9982 32.515 21.1096L37.2799 16.3152ZM39.9106 15.9849C39.8483 15.9515 39.7835 15.9206 39.7188 15.8936C39.7843 15.9206 39.8483 15.9515 39.9106 15.9849ZM38.0432 15.8936C38.1742 15.8388 38.3107 15.7975 38.4504 15.7697C38.3107 15.7975 38.1742 15.8396 38.0432 15.8936ZM33.1338 24.6864C33.1638 24.7015 33.1938 24.7158 33.2245 24.7301C33.1938 24.7166 33.1638 24.7015 33.1338 24.6864ZM33.601 24.8588C33.5253 24.8405 33.4511 24.8183 33.3785 24.7921C33.4511 24.8183 33.5261 24.8405 33.601 24.8588ZM34.1165 0C34.7218 0 35.2901 0.237452 35.7179 0.667884L35.7187 0.668678L40.4836 5.46299C40.9107 5.89263 41.1459 6.46521 41.1459 7.07433C41.1459 7.68345 40.9107 8.25603 40.4836 8.68567C40.0559 9.1161 39.4868 9.35355 38.8822 9.35355C38.2776 9.35355 37.7085 9.1161 37.2807 8.68567L32.5158 3.89056C32.0872 3.46013 31.852 2.88834 31.852 2.27922C31.852 1.67011 32.0872 1.09832 32.515 0.667884C32.9428 0.237452 33.5111 0 34.1165 0ZM32.571 0.724269C32.6484 0.646442 32.7305 0.574968 32.8173 0.510641C32.7313 0.574968 32.6492 0.646442 32.571 0.724269ZM33.2798 0.246188C33.3777 0.204892 33.4795 0.171537 33.5829 0.14533C33.4795 0.171537 33.3785 0.204892 33.2798 0.246188ZM34.1172 0.0794155C33.9349 0.0794155 33.7558 0.101652 33.5829 0.14533C33.7558 0.101652 33.9341 0.0794155 34.1172 0.0794155ZM37.3368 8.62849C37.4915 8.78494 37.6651 8.91439 37.853 9.01524C37.6659 8.91359 37.4915 8.78414 37.3368 8.62849ZM37.853 9.01524C37.9153 9.0486 37.9792 9.07957 38.0447 9.10657C37.98 9.07957 37.9153 9.0486 37.853 9.01524ZM38.1442 9.14548C38.2113 9.16931 38.2792 9.18996 38.3478 9.20743C38.2792 9.18996 38.2105 9.16931 38.1442 9.14548ZM40.4276 8.62928C40.8537 8.20052 41.0669 7.63739 41.0669 7.07434C41.067 7.63759 40.8539 8.20077 40.4276 8.62928ZM51.2671 16.3132C50.8393 15.8828 50.2702 15.6453 49.6656 15.6453C49.061 15.6453 48.492 15.882 48.0642 16.3124C47.181 17.2011 47.181 18.6464 48.0642 19.5351L52.8291 24.3294C53.2569 24.7598 53.8252 24.9973 54.4306 24.9973C55.036 24.9973 55.6042 24.7606 56.032 24.3294C56.4598 23.899 56.6958 23.3264 56.6958 22.7181C56.6958 22.1098 56.4598 21.5372 56.032 21.1067L51.2671 16.3124V16.3132ZM50.5023 15.8915C50.5678 15.9185 50.6317 15.9495 50.6941 15.9828C50.6317 15.9495 50.567 15.9185 50.5023 15.8915ZM49.1313 15.7915C49.2307 15.7668 49.3318 15.7486 49.4352 15.7382C49.3326 15.7494 49.2307 15.7668 49.1313 15.7915ZM48.3657 16.156C48.2789 16.2203 48.1968 16.2918 48.1194 16.3696C48.1976 16.2918 48.2797 16.2203 48.3657 16.156ZM47.84 16.7143C47.9197 16.5928 48.0129 16.4768 48.1194 16.3696C48.0129 16.4768 47.9197 16.592 47.84 16.7143ZM48.1194 19.4803C48.0129 19.3731 47.9197 19.2579 47.84 19.1356C47.9197 19.2571 48.0129 19.3731 48.1194 19.4803ZM53.4637 24.6939C53.4882 24.7058 53.5134 24.7178 53.5387 24.7297C53.5134 24.7185 53.4882 24.7066 53.4637 24.6939ZM42.2013 12.3454C42.2013 11.0755 43.2282 10.0423 44.4903 10.0423C45.7523 10.0423 46.7792 11.0755 46.7792 12.3454C46.7792 13.6152 45.7523 14.6484 44.4903 14.6484C43.2282 14.6484 42.2013 13.6152 42.2013 12.3454ZM42.3055 12.0078C42.3166 11.934 42.3316 11.8617 42.3497 11.791C42.3316 11.8617 42.3166 11.9348 42.3055 12.0078ZM46.0538 13.9186C46.1036 13.8685 46.1517 13.8153 46.1967 13.7605C46.1517 13.8153 46.1044 13.8685 46.0538 13.9186Z" fill="#FFFFFF"></path></svg>
+        <span class="h-5 w-px bg-white/20"></span>
+        <span class="text-lg font-bold">Publisher <span class="font-serif italic font-normal">Health Check</span></span>
+      </div>
+      <nav class="flex gap-1 p-1 bg-white/10 rounded-lg">
+        <button class="px-4 py-1.5 text-sm font-medium rounded-md bg-white text-ink">Analyzer</button>
+      </nav>
+    </div>
+  </header>
+
+  <section class="bg-white border-b border-line">
+    <div class="max-w-7xl mx-auto px-6 py-5 flex flex-col lg:flex-row gap-6 lg:items-center lg:justify-between">
+      <div class="flex flex-col gap-1 max-w-xl">
+        <span class="text-xs font-medium uppercase tracking-wide text-muted">About this tool</span>
+        <p class="text-sm text-ink">Analiza el rendimiento de tus publishers y detecta integraciones con alertas de rendimiento (Avail, Bid o Fill). Además, permite organizar los problemas en una lista de tareas.</p>
+      </div>
+      <ol class="flex flex-col sm:flex-row gap-4 sm:gap-6">
+        <li class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-grape-soft text-grape text-xs font-bold flex items-center justify-center shrink-0">1</span><span class="text-sm">Sube reporte</span></li>
+        <li class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-grape-soft text-grape text-xs font-bold flex items-center justify-center shrink-0">2</span><span class="text-sm">Evalúa KPIs</span></li>
+        <li class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-grape-soft text-grape text-xs font-bold flex items-center justify-center shrink-0">3</span><span class="text-sm">Revisa y crea tareas</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <main class="max-w-7xl mx-auto px-6 py-8 flex flex-col gap-6">
+    
+    <!-- 1. Report Type & Upload Zone -->
+    <section class="bg-white border border-line rounded-xl p-6 flex flex-col md:flex-row gap-8">
+      <div class="w-full md:w-1/3 flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <h2 class="text-base font-bold text-ink">1. Origen de Datos</h2>
+          <p class="text-xs text-muted">Selecciona el tipo de reporte.</p>
+        </div>
+        <div class="flex flex-col gap-1.5 mb-2">
+          <label class="text-xs font-medium uppercase tracking-wide text-muted">Tipo de Reporte</label>
+          <select id="reportType" class="w-full px-3 py-2 rounded-lg bg-white border border-line text-sm text-ink focus:outline-none focus:border-grape focus:ring-2 focus:ring-grape/20">
+            <option value="admin">Admin (Net Price / Net CPM)</option>
+            <option value="psm">PSM / AM (Revenue / eCPM)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="hidden md:block w-px bg-line"></div>
+
+      <div class="w-full md:w-2/3 flex flex-col gap-4">
+        <div class="flex flex-col gap-1">
+          <h2 class="text-base font-bold text-ink">Adjuntar Reporte</h2>
+          <p class="text-xs text-muted">Sube el CSV extraído de la consola.</p>
+        </div>
+        <label id="dropzone" class="border-2 border-dashed border-line rounded-xl p-8 text-center bg-canvas hover:border-grape cursor-pointer flex flex-col gap-1 transition-colors">
+          <input type="file" id="fileInput" accept=".csv" class="hidden">
+          <span class="text-sm font-medium text-ink">Arrastra tu archivo .csv aquí</span>
+          <span class="text-xs text-muted">o haz clic para explorar</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- 2. Threshold Settings -->
+    <section class="bg-white border border-line rounded-xl p-6 flex flex-col gap-4">
+      <div class="flex flex-col gap-1">
+        <h2 class="text-base font-bold text-ink">2. Umbrales de Revisión</h2>
+        <p class="text-xs text-muted">Define qué porcentajes consideramos como un rendimiento bajo. Desactiva los que no quieras evaluar.</p>
+      </div>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-2">
+        <!-- Avail -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-medium uppercase tracking-wide text-muted">Límite Available (%)</label>
+            <button type="button" id="toggleAvail" class="relative w-10 h-6 rounded-full bg-grape transition-colors focus:outline-none" role="switch" aria-checked="true">
+              <span class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-transform translate-x-4 shadow-sm"></span>
+            </button>
+          </div>
+          <input type="number" id="availThreshold" value="20" class="w-full px-3 py-2 rounded-lg bg-white border border-line text-sm text-ink placeholder-muted focus:outline-none focus:border-grape focus:ring-2 focus:ring-grape/20 transition-all">
+        </div>
+        <!-- Bid -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-medium uppercase tracking-wide text-muted">Límite Bid Rate (%)</label>
+            <button type="button" id="toggleBid" class="relative w-10 h-6 rounded-full bg-grape transition-colors focus:outline-none" role="switch" aria-checked="true">
+              <span class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-transform translate-x-4 shadow-sm"></span>
+            </button>
+          </div>
+          <input type="number" id="bidThreshold" value="10" class="w-full px-3 py-2 rounded-lg bg-white border border-line text-sm text-ink placeholder-muted focus:outline-none focus:border-grape focus:ring-2 focus:ring-grape/20 transition-all">
+        </div>
+        <!-- Fill -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-medium uppercase tracking-wide text-muted">Límite Fill Rate (%)</label>
+            <button type="button" id="toggleFill" class="relative w-10 h-6 rounded-full bg-grape transition-colors focus:outline-none" role="switch" aria-checked="true">
+              <span class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-transform translate-x-4 shadow-sm"></span>
+            </button>
+          </div>
+          <input type="number" id="fillThreshold" value="15" class="w-full px-3 py-2 rounded-lg bg-white border border-line text-sm text-ink placeholder-muted focus:outline-none focus:border-grape focus:ring-2 focus:ring-grape/20 transition-all">
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. KPI Section -->
+    <section id="kpiSection" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div class="bg-white border border-line rounded-xl p-6 flex flex-col gap-3">
+        <span class="text-xs font-medium uppercase tracking-wide text-muted">Health Score</span>
+        <span id="kpiHealth" class="text-3xl font-bold text-ink tabular-nums">0%</span>
+      </div>
+      <div class="bg-white border border-line rounded-xl p-6 flex flex-col gap-3">
+        <span class="text-xs font-medium uppercase tracking-wide text-muted">Total Sites (CSV)</span>
+        <span id="kpiTotalSites" class="text-3xl font-bold text-ink tabular-nums">0</span>
+      </div>
+      <div class="bg-white border border-line rounded-xl p-6 flex flex-col gap-3">
+        <span class="text-xs font-medium uppercase tracking-wide text-muted">Sites Afectados</span>
+        <span id="kpiSites" class="text-3xl font-bold text-ink tabular-nums">0</span>
+      </div>
+      <div class="bg-white border border-line rounded-xl p-6 flex flex-col gap-3">
+        <span class="text-xs font-medium uppercase tracking-wide text-muted">Integraciones Afectadas</span>
+        <span id="kpiInts" class="text-3xl font-bold text-ink tabular-nums">0</span>
+      </div>
+      <div class="bg-white border border-line rounded-xl p-6 flex flex-col gap-3">
+        <span class="text-xs font-medium uppercase tracking-wide text-muted">Total Alertas (Líneas)</span>
+        <span id="kpiAlerts" class="text-3xl font-bold text-ink tabular-nums">0</span>
+      </div>
+    </section>
+
+    <div id="resultsWrapper" class="hidden flex flex-col gap-6">
+      
+      <!-- 4. Filters and Actions -->
+      <section class="bg-white border border-line rounded-xl p-6 flex flex-col gap-4">
+        <div class="flex flex-col gap-1 mb-2">
+          <h2 class="text-base font-bold text-ink">4. Filtros y Búsqueda</h2>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium uppercase tracking-wide text-muted">Buscar Site</label>
+            <input type="text" id="searchSite" placeholder="ej. mysite.com" class="w-full px-3 py-2 rounded-lg bg-white border border-line text-sm text-ink placeholder-muted focus:outline-none focus:border-grape focus:ring-2 focus:ring-grape/20">
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium uppercase tracking-wide text-muted">Integración</label>
+            <select id="filterIntegration" class="w-full px-3 py-2 rounded-lg bg-white border border-line text-sm text-ink focus:outline-none focus:border-grape focus:ring-2 focus:ring-grape/20">
+              <option value="all">Todas</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium uppercase tracking-wide text-muted">Formato</label>
+            <select id="filterFormat" class="w-full px-3 py-2 rounded-lg bg-white border border-line text-sm text-ink focus:outline-none focus:border-grape focus:ring-2 focus:ring-grape/20">
+              <option value="all">Todos</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium uppercase tracking-wide text-muted">Tipo de Problema</label>
+            <select id="filterErrorType" class="w-full px-3 py-2 rounded-lg bg-white border border-line text-sm text-ink focus:outline-none focus:border-grape focus:ring-2 focus:ring-grape/20">
+              <option value="all">Cualquiera</option>
+              <option value="avail">Bajo Avail Rate</option>
+              <option value="bid">Bajo Bid Rate</option>
+              <option value="fill">Bajo Fill Rate</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2 pt-4 border-t border-line">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto">
+            <span class="text-sm font-medium text-ink shrink-0">Agrupar vista por:</span>
+            <select id="selectGroupBy" class="px-3 py-2 rounded-lg bg-white border border-line text-sm text-ink focus:outline-none focus:border-grape focus:ring-2 focus:ring-grape/20 min-w-[200px]">
+              <option value="none">Ninguno (Detalle)</option>
+              <option value="site">Por Site</option>
+              <option value="int">Por Integración</option>
+              <option value="format">Por Formato</option>
+              <option value="int_format">Por Integración y Formato</option>
+            </select>
+          </div>
+          <button id="btnExport" class="px-4 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white text-sm font-medium w-full md:w-auto shrink-0 transition-colors">
+            Descargar CSV
+          </button>
+        </div>
+      </section>
+
+      <!-- 5. Unified Results Table -->
+      <section class="flex flex-col gap-3">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-base font-bold text-ink">5. Resultados (<span id="resultsCount">0</span>)</h2>
+        </div>
+        <div class="overflow-x-auto border border-line rounded-xl bg-white table-scroll max-h-[500px]">
+          <table class="w-full text-sm">
+            <thead class="bg-canvas sticky top-0 z-10">
+              <tr class="text-xs font-medium uppercase tracking-wide text-muted sort-headers">
+                <th class="px-4 py-3 text-left w-12 border-r border-line">Acción</th>
+                <th class="px-4 py-3 text-left cursor-pointer hover:text-grape select-none" data-sort="statusType">Estado <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+                <th class="px-4 py-3 text-left cursor-pointer hover:text-grape select-none" data-sort="site">Site <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+                <th class="px-4 py-3 text-left cursor-pointer hover:text-grape select-none" data-sort="integration">Integración <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+                <th class="px-4 py-3 text-left cursor-pointer hover:text-grape select-none" data-sort="format">Formato <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+                <th class="px-4 py-3 text-right cursor-pointer hover:text-grape select-none" data-sort="avail">Avail % <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+                <th class="px-4 py-3 text-right cursor-pointer hover:text-grape select-none" data-sort="bid">Bid % <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+                <th class="px-4 py-3 text-right cursor-pointer hover:text-grape select-none" data-sort="fill">Fill % <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+                <th class="px-4 py-3 text-right cursor-pointer hover:text-grape select-none" data-sort="gReq">Gross Req <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+                <th class="px-4 py-3 text-right cursor-pointer hover:text-grape select-none" data-sort="req">Req <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+                <th class="px-4 py-3 text-right cursor-pointer hover:text-grape select-none" data-sort="imps">Imps <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+                <th class="px-4 py-3 text-right cursor-pointer hover:text-grape select-none" data-sort="rev"><span id="thRev">Net Price</span> <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+                <th class="px-4 py-3 text-right cursor-pointer hover:text-grape select-none" data-sort="cpm"><span id="thCpm">Net CPM</span> <span class="icon-slot inline-block align-middle ml-1 w-4 h-4"></span></th>
+              </tr>
+            </thead>
+            <tbody id="unifiedTableBody" class="divide-y divide-line">
+              <!-- JS Rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 6. Task View -->
+      <section class="bg-white border border-line rounded-xl p-6 flex flex-col gap-4 mt-2">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex flex-col gap-1">
+            <h2 class="text-base font-bold text-ink">6. Vista de Tareas (<span id="taskCount">0</span>)</h2>
+            <p class="text-xs text-muted">Añade elementos desde la tabla de arriba con el botón "+" para hacerles seguimiento y exportar un CSV de tareas.</p>
+          </div>
+          <button id="btnExportTasks" class="px-4 py-2 rounded-lg bg-grape hover:bg-grape-hover text-white text-sm font-medium transition-colors shrink-0">
+            Descargar Tareas (CSV)
+          </button>
+        </div>
+        <div class="overflow-x-auto border border-line rounded-xl bg-canvas table-scroll max-h-[400px]">
+          <table class="w-full text-sm">
+            <thead class="bg-canvas border-b border-line sticky top-0 z-10">
+              <tr class="text-xs font-medium uppercase tracking-wide text-muted">
+                <th class="px-4 py-3 text-left w-12">Rem</th>
+                <th class="px-4 py-3 text-left">Site</th>
+                <th class="px-4 py-3 text-left">Integración</th>
+                <th class="px-4 py-3 text-left">Problema</th>
+                <th class="px-4 py-3 text-left w-1/3">Comentarios / Acción requerida</th>
+              </tr>
+            </thead>
+            <tbody id="tasksTableBody" class="divide-y divide-line bg-white">
+              <tr><td colspan="5" class="px-4 py-8 text-center text-sm text-muted">No hay tareas añadidas. Usa el botón "+" en la tabla de resultados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div id="toast" class="hidden fixed top-4 right-4 bg-ink text-white text-sm px-4 py-3 rounded-lg shadow-lg z-50"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      let rawData = [];
+      let issuesData = [];
+      let tasksData = [];
+      let sortConfig = { col: null, asc: false };
+      let currentViewMode = 'none'; // 'none', 'site', 'int', 'format', 'int_format'
+
+      const dropzone = document.getElementById('dropzone');
+      const fileInput = document.getElementById('fileInput');
+      const resultsWrapper = document.getElementById('resultsWrapper');
+      
+      const searchSite = document.getElementById('searchSite');
+      const filterInt = document.getElementById('filterIntegration');
+      const filterFmt = document.getElementById('filterFormat');
+      const filterErr = document.getElementById('filterErrorType');
+      
+      const threshAvail = document.getElementById('availThreshold');
+      const threshBid = document.getElementById('bidThreshold');
+      const threshFill = document.getElementById('fillThreshold');
+      
+      const toggleAvail = document.getElementById('toggleAvail');
+      const toggleBid = document.getElementById('toggleBid');
+      const toggleFill = document.getElementById('toggleFill');
+
+      const reportType = document.getElementById('reportType');
+      const thRev = document.getElementById('thRev');
+      const thCpm = document.getElementById('thCpm');
+
+      const kpiSection = document.getElementById('kpiSection');
+      const kpiTotalSites = document.getElementById('kpiTotalSites');
+      const kpiSites = document.getElementById('kpiSites');
+      const kpiInts = document.getElementById('kpiInts');
+      const kpiAlerts = document.getElementById('kpiAlerts');
+      const kpiHealth = document.getElementById('kpiHealth');
+
+      const btnExport = document.getElementById('btnExport');
+      const btnExportTasks = document.getElementById('btnExportTasks');
+      
+      const selectGroupBy = document.getElementById('selectGroupBy');
+      
+      const unifiedTableBody = document.getElementById('unifiedTableBody');
+      const tasksTableBody = document.getElementById('tasksTableBody');
+      const taskCountEl = document.getElementById('taskCount');
+
+      // Drag and drop events
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-grape', 'bg-grape-soft');
+      });
+      dropzone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-grape', 'bg-grape-soft');
+      });
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-grape', 'bg-grape-soft');
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+      });
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+      });
+
+      // Reactive update listeners
+      [searchSite, filterInt, filterFmt, filterErr, threshAvail, threshBid, threshFill, reportType].forEach(el => {
+        el.addEventListener('input', () => {
+          if (rawData.length > 0) updateResults();
+        });
+      });
+
+      // Toggle Logic
+      function setupToggle(btn, inputId) {
+        btn.addEventListener('click', () => {
+          const isOn = btn.getAttribute('aria-checked') === 'true';
+          const newState = !isOn;
+          btn.setAttribute('aria-checked', newState);
+          
+          const knob = btn.querySelector('span');
+          const input = document.getElementById(inputId);
+          
+          if (newState) {
+            btn.classList.replace('bg-line', 'bg-grape');
+            knob.classList.add('translate-x-4');
+            input.disabled = false;
+            input.classList.remove('opacity-40', 'bg-canvas', 'cursor-not-allowed');
+          } else {
+            btn.classList.replace('bg-grape', 'bg-line');
+            knob.classList.remove('translate-x-4');
+            input.disabled = true;
+            input.classList.add('opacity-40', 'bg-canvas', 'cursor-not-allowed');
+          }
+          if (rawData.length > 0) updateResults();
+        });
+      }
+
+      setupToggle(toggleAvail, 'availThreshold');
+      setupToggle(toggleBid, 'bidThreshold');
+      setupToggle(toggleFill, 'fillThreshold');
+
+      btnExport.addEventListener('click', exportToCSV);
+      btnExportTasks.addEventListener('click', exportTasksToCSV);
+
+      selectGroupBy.addEventListener('change', (e) => {
+        currentViewMode = e.target.value;
+        renderTable();
+      });
+
+      // Sort event delegation
+      document.querySelector('.sort-headers').addEventListener('click', (e) => {
+        const th = e.target.closest('th[data-sort]');
+        if (!th) return;
+        const col = th.dataset.sort;
+        
+        if (sortConfig.col === col) {
+          sortConfig.asc = !sortConfig.asc;
+        } else {
+          sortConfig.col = col;
+          sortConfig.asc = false;
+        }
+        
+        // Update icons
+        document.querySelectorAll('.sort-headers .icon-slot').forEach(el => el.innerHTML = '');
+        const iconAsc = `<svg class="w-4 h-4 text-grape" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15l7-7 7 7"/></svg>`;
+        const iconDesc = `<svg class="w-4 h-4 text-grape" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg>`;
+        th.querySelector('.icon-slot').innerHTML = sortConfig.asc ? iconAsc : iconDesc;
+        
+        renderTable();
+      });
+
+      // Event delegation for tasks (add/remove)
+      unifiedTableBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action="add-task"]');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const item = issuesData.find(i => i.id === id);
+        if (item) {
+          if (!tasksData.find(t => t.id === id)) {
+            tasksData.push({ id: item.id, item: item, comment: '' });
+            renderTasksTable();
+            showToast('Añadido a tareas', 'ok');
+          } else {
+            showToast('Ya está en la lista de tareas', 'warn');
+          }
+        }
+      });
+
+      tasksTableBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action="remove-task"]');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        tasksData = tasksData.filter(t => t.id !== id);
+        renderTasksTable();
+      });
+
+      tasksTableBody.addEventListener('input', (e) => {
+        if (e.target.tagName === 'INPUT' && e.target.dataset.id) {
+          const task = tasksData.find(t => t.id === e.target.dataset.id);
+          if (task) task.comment = e.target.value;
+        }
+      });
+
+      function handleFile(file) {
+        if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+          showToast('Solo se aceptan archivos CSV', 'error');
+          return;
+        }
+        showToast('Procesando archivo...', 'info');
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            rawData = results.data;
+            initFilters();
+            updateResults();
+            kpiSection.classList.remove('hidden');
+            resultsWrapper.classList.remove('hidden');
+            showToast('Análisis completado', 'ok');
+          },
+          error: function(err) {
+            showToast('Error al leer CSV', 'danger');
+          }
+        });
+      }
+
+      function initFilters() {
+        if (!rawData || !rawData.length) return;
+        const headers = Object.keys(rawData[0]);
+        const findCol = (keywords, exclude = []) => {
+          return headers.find(h => {
+            const clean = h.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const hasKey = keywords.some(k => clean.includes(k));
+            const hasExc = exclude.some(e => clean.includes(e));
+            return hasKey && (!exclude.length || !hasExc);
+          });
+        };
+        
+        const intCol = findCol(['integration', 'integracion']) || headers[1];
+        const fmtCol = findCol(['size', 'format', 'formato']) || headers[2];
+
+        const integrations = new Set();
+        const formats = new Set();
+
+        rawData.forEach(row => {
+          if (row[intCol]) integrations.add(row[intCol]);
+          if (row[fmtCol]) formats.add(row[fmtCol]);
+        });
+
+        filterInt.innerHTML = '<option value="all">Todas</option>';
+        [...integrations].sort().forEach(val => filterInt.innerHTML += `<option value="${val}">${val}</option>`);
+
+        filterFmt.innerHTML = '<option value="all">Todos</option>';
+        [...formats].sort().forEach(val => filterFmt.innerHTML += `<option value="${val}">${val}</option>`);
+      }
+
+      function updateResults() {
+        if (!rawData || !rawData.length) return;
+
+        const headers = Object.keys(rawData[0]);
+        const findCol = (keywords, exclude = []) => {
+          return headers.find(h => {
+            const clean = h.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const hasKey = keywords.some(k => clean.includes(k));
+            const hasExc = exclude.some(e => clean.includes(e));
+            return hasKey && (!exclude.length || !hasExc);
+          });
+        };
+
+        const isPSM = reportType.value === 'psm';
+        thRev.innerText = isPSM ? 'Revenue' : 'Net Price';
+        thCpm.innerText = isPSM ? 'eCPM' : 'Net CPM';
+
+        const colMap = {
+          site: findCol(['site', 'publisher']),
+          int: findCol(['integration', 'integracion']),
+          fmt: findCol(['size', 'format', 'formato']),
+          avail: findCol(['available', 'availablerate']),
+          bid: findCol(['bidrate', 'bid']),
+          fill: findCol(['fillrate', 'fill']),
+          gReq: findCol(['grossrequests', 'grossreq', 'gross']),
+          req: findCol(['requests', 'reqs'], ['gross']),
+          imps: findCol(['impressions', 'impresiones', 'imps']),
+          rev: isPSM ? findCol(['revenue', 'ingresos'], ['net']) : findCol(['netnetprice', 'price', 'netnetrevenue']),
+          cpm: isPSM ? findCol(['ecpm']) : findCol(['netnetcpm', 'cpm'], ['ecpm'])
+        };
+
+        const tAvail = parseFloat(threshAvail.value) || 20;
+        const tBid = parseFloat(threshBid.value) || 10;
+        const tFill = parseFloat(threshFill.value) || 15;
+
+        const activeAvail = toggleAvail.getAttribute('aria-checked') === 'true';
+        const activeBid = toggleBid.getAttribute('aria-checked') === 'true';
+        const activeFill = toggleFill.getAttribute('aria-checked') === 'true';
+
+        const parseNum = (val) => {
+          if (!val) return 0;
+          let clean = String(val).replace(/[^0-9.-]+/g, "");
+          return parseFloat(clean) || 0;
+        };
+        const parseRate = (val) => {
+          let num = parseNum(val);
+          return (String(val).includes('%') || num > 1) ? num : num * 100;
+        };
+
+        const uniqueTotalSites = new Set();
+        rawData.forEach(row => {
+          if (row[colMap.site]) uniqueTotalSites.add(row[colMap.site]);
+        });
+        kpiTotalSites.innerText = new Intl.NumberFormat('en-US').format(uniqueTotalSites.size);
+
+        issuesData = [];
+
+        rawData.forEach((row, index) => {
+          const aRate = parseRate(row[colMap.avail]);
+          const bRate = parseRate(row[colMap.bid]);
+          const fRate = parseRate(row[colMap.fill]);
+
+          const isLowAvail = activeAvail && (aRate < tAvail);
+          const isLowBid = activeBid && (bRate < tBid);
+          const isLowFill = activeFill && (fRate < tFill);
+
+          if (isLowAvail || isLowBid || isLowFill) {
+            let issues = [];
+            if (isLowAvail) issues.push('Avail');
+            if (isLowBid) issues.push('Bid');
+            if (isLowFill) issues.push('Fill');
+
+            issuesData.push({
+              id: 'row_' + index + '_' + Math.random().toString(36).substr(2, 5),
+              site: row[colMap.site] || 'N/A',
+              integration: row[colMap.int] || 'N/A',
+              format: row[colMap.fmt] || 'N/A',
+              avail: aRate,
+              bid: bRate,
+              fill: fRate,
+              gReq: parseNum(row[colMap.gReq]),
+              req: parseNum(row[colMap.req]),
+              imps: parseNum(row[colMap.imps]),
+              rev: parseNum(row[colMap.rev]),
+              cpm: parseNum(row[colMap.cpm]),
+              statusMsg: issues.join(' & '),
+              statusType: issues.length > 1 ? 'danger' : 'warn',
+              issuesArr: issues
+            });
+          }
+        });
+
+        const totalValidRows = rawData.length;
+        const totalAlerts = issuesData.length;
+        let healthPct = 100;
+        if (totalValidRows > 0) {
+          healthPct = ((totalValidRows - totalAlerts) / totalValidRows) * 100;
+        }
+        
+        kpiHealth.innerText = healthPct.toFixed(1) + '%';
+        if (healthPct >= 90) {
+          kpiHealth.className = 'text-3xl font-bold tabular-nums text-ok';
+        } else if (healthPct >= 70) {
+          kpiHealth.className = 'text-3xl font-bold tabular-nums text-warn';
+        } else {
+          kpiHealth.className = 'text-3xl font-bold tabular-nums text-danger';
+        }
+
+        renderTable();
+      }
+
+      function getFilteredAndSortedData() {
+        const fInt = filterInt.value;
+        const fFmt = filterFmt.value;
+        const fErr = filterErr.value;
+        const search = searchSite.value.toLowerCase().trim();
+
+        let filtered = issuesData.filter(item => {
+          if (fInt !== 'all' && item.integration !== fInt) return false;
+          if (fFmt !== 'all' && item.format !== fFmt) return false;
+          if (search && !item.site.toLowerCase().includes(search)) return false;
+          if (fErr !== 'all') {
+            const hasError = item.issuesArr.some(err => err.toLowerCase().includes(fErr));
+            if (!hasError) return false;
+          }
+          return true;
+        });
+
+        let dataToProcess = filtered;
+
+        if (currentViewMode !== 'none') {
+          const groupedMap = new Map();
+          dataToProcess.forEach(item => {
+            let key = '';
+            let gSite = 'Varios', gInt = 'Varias', gFmt = 'Varios';
+            
+            if (currentViewMode === 'site') { 
+              key = item.site; gSite = item.site; 
+            } else if (currentViewMode === 'int') { 
+              key = item.integration; gInt = item.integration; 
+            } else if (currentViewMode === 'format') { 
+              key = item.format; gFmt = item.format; 
+            } else if (currentViewMode === 'int_format') { 
+              key = item.integration + '|' + item.format; 
+              gInt = item.integration; gFmt = item.format; 
+            }
+
+            if (!groupedMap.has(key)) {
+              groupedMap.set(key, {
+                id: 'group_' + Math.random().toString(36).substr(2, 5),
+                site: gSite, integration: gInt, format: gFmt,
+                avail: 0, bid: 0, fill: 0,
+                gReq: 0, req: 0, imps: 0, rev: 0, cpm: 0,
+                sum_avail_w: 0, sum_bid_w: 0,
+                issuesArr: new Set(),
+                statusMsg: '', statusType: '', count: 0
+              });
+            }
+            let g = groupedMap.get(key);
+            g.gReq += item.gReq;
+            g.req += item.req;
+            g.imps += item.imps;
+            g.rev += item.rev;
+            // Weighted logic for accurate percentages
+            g.sum_avail_w += (item.avail / 100) * item.gReq;
+            g.sum_bid_w += (item.bid / 100) * item.req;
+            item.issuesArr.forEach(i => g.issuesArr.add(i));
+            g.count++;
+          });
+
+          dataToProcess = Array.from(groupedMap.values()).map(g => {
+            g.avail = g.gReq > 0 ? (g.sum_avail_w / g.gReq) * 100 : 0;
+            g.bid = g.req > 0 ? (g.sum_bid_w / g.req) * 100 : 0;
+            g.fill = g.req > 0 ? (g.imps / g.req) * 100 : 0;
+            g.cpm = g.imps > 0 ? (g.rev / g.imps) * 1000 : 0;
+            
+            const issues = Array.from(g.issuesArr);
+            g.issuesArr = issues;
+            g.statusMsg = issues.join(' & ') + ` (${g.count})`;
+            g.statusType = issues.length > 1 ? 'danger' : 'warn';
+            return g;
+          });
+        }
+
+        if (sortConfig.col) {
+          dataToProcess.sort((a, b) => {
+            let vA = a[sortConfig.col];
+            let vB = b[sortConfig.col];
+            if (typeof vA === 'string') vA = vA.toLowerCase();
+            if (typeof vB === 'string') vB = vB.toLowerCase();
+            if (vA < vB) return sortConfig.asc ? -1 : 1;
+            if (vA > vB) return sortConfig.asc ? 1 : -1;
+            return 0;
+          });
+        }
+        return dataToProcess;
+      }
+
+      function renderTable() {
+        const fmtNum = (num) => new Intl.NumberFormat('en-US').format(num);
+        const fmtCur = (num) => '$' + new Intl.NumberFormat('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(num);
+        const fmtPct = (num) => new Intl.NumberFormat('en-US', {maximumFractionDigits: 2}).format(num) + '%';
+
+        const dataToRender = getFilteredAndSortedData();
+        document.getElementById('resultsCount').innerText = dataToRender.length;
+
+        // KPI Calculations
+        const uniqueSites = new Set(dataToRender.map(item => item.site).filter(s => s !== 'Varios'));
+        const uniqueInts = new Set(dataToRender.map(item => item.integration).filter(i => i !== 'Varias'));
+        
+        kpiSites.innerText = fmtNum(uniqueSites.size > 0 ? uniqueSites.size : dataToRender.length);
+        kpiInts.innerText = fmtNum(uniqueInts.size > 0 ? uniqueInts.size : 1);
+        kpiAlerts.innerText = fmtNum(dataToRender.length);
+
+        if (dataToRender.length === 0) {
+          unifiedTableBody.innerHTML = '<tr><td colspan="13" class="px-4 py-8 text-center text-sm text-muted">No se encontraron problemas con los filtros actuales.</td></tr>';
+          return;
+        }
+
+        const buildRow = (item) => {
+          let badgeClass = item.statusType === 'danger' ? 'bg-danger-soft text-danger' : 'bg-warn-soft text-warn';
+          let badge = `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${badgeClass} whitespace-nowrap"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>${item.statusMsg}</span>`;
+
+          const taskBtn = `<button data-action="add-task" data-id="${item.id}" title="Añadir a tareas" class="w-7 h-7 flex items-center justify-center rounded-md bg-canvas border border-line text-grape hover:bg-grape hover:text-white transition-colors">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14m-7-7h14"/></svg>
+          </button>`;
+
+          return `
+            <tr class="hover:bg-canvas">
+              <td class="px-4 py-3 border-r border-line bg-white">${taskBtn}</td>
+              <td class="px-4 py-3">${badge}</td>
+              <td class="px-4 py-3 font-medium text-ink">${item.site}</td>
+              <td class="px-4 py-3 text-muted">${item.integration}</td>
+              <td class="px-4 py-3 text-muted">${item.format}</td>
+              <td class="px-4 py-3 text-right tabular-nums font-bold ${item.issuesArr.includes('Avail') ? 'text-danger' : 'text-ink'}">${fmtPct(item.avail)}</td>
+              <td class="px-4 py-3 text-right tabular-nums font-bold ${item.issuesArr.includes('Bid') ? 'text-danger' : 'text-ink'}">${fmtPct(item.bid)}</td>
+              <td class="px-4 py-3 text-right tabular-nums font-bold ${item.issuesArr.includes('Fill') ? 'text-danger' : 'text-ink'}">${fmtPct(item.fill)}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-muted">${fmtNum(item.gReq)}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-muted">${fmtNum(item.req)}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-muted">${fmtNum(item.imps)}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-muted">${fmtCur(item.rev)}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-muted">${fmtCur(item.cpm)}</td>
+            </tr>
+          `;
+        };
+
+        unifiedTableBody.innerHTML = dataToRender.map(item => buildRow(item)).join('');
+      }
+
+      function renderTasksTable() {
+        taskCountEl.innerText = tasksData.length;
+        if (tasksData.length === 0) {
+          tasksTableBody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-sm text-muted">No hay tareas añadidas. Usa el botón "+" en la tabla de resultados.</td></tr>';
+          return;
+        }
+
+        tasksTableBody.innerHTML = tasksData.map(task => {
+          let badgeClass = task.item.statusType === 'danger' ? 'bg-danger-soft text-danger' : 'bg-warn-soft text-warn';
+          let badge = `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${badgeClass} whitespace-nowrap"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>${task.item.statusMsg}</span>`;
+
+          return `
+            <tr class="hover:bg-canvas">
+              <td class="px-4 py-3">
+                <button data-action="remove-task" data-id="${task.id}" title="Quitar" class="w-7 h-7 flex items-center justify-center rounded-md text-muted hover:bg-danger-soft hover:text-danger transition-colors">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </td>
+              <td class="px-4 py-3 font-medium text-ink">${task.item.site}</td>
+              <td class="px-4 py-3 text-muted">${task.item.integration} <span class="text-xs ml-1 bg-line px-1.5 py-0.5 rounded">${task.item.format}</span></td>
+              <td class="px-4 py-3">${badge}</td>
+              <td class="px-4 py-2">
+                <input type="text" data-id="${task.id}" value="${task.comment}" placeholder="Añadir comentario..." class="w-full px-3 py-1.5 rounded bg-canvas border border-transparent focus:bg-white focus:border-grape focus:ring-2 focus:ring-grape/20 text-sm text-ink outline-none transition-all">
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function exportToCSV() {
+        const dataToExport = getFilteredAndSortedData();
+        if (!dataToExport.length) {
+          showToast('No hay datos para exportar', 'warn');
+          return;
+        }
+        const isPSM = reportType.value === 'psm';
+        const headers = ["Estado", "Site", "Integracion", "Formato", "Avail %", "Bid %", "Fill %", "Gross Requests", "Requests", "Impressions", isPSM ? "Revenue" : "Net Price", isPSM ? "eCPM" : "Net CPM"];
+        const rows = dataToExport.map(i => [
+          i.statusMsg, i.site, i.integration, i.format, 
+          i.avail.toFixed(2) + '%', i.bid.toFixed(2) + '%', i.fill.toFixed(2) + '%',
+          i.gReq, i.req, i.imps, i.rev.toFixed(2), i.cpm.toFixed(4)
+        ]);
+        triggerDownload(headers, rows, "publisher_health_export.csv");
+      }
+
+      function exportTasksToCSV() {
+        if (!tasksData.length) {
+          showToast('La lista de tareas está vacía', 'warn');
+          return;
+        }
+        const headers = ["Site", "Integracion", "Formato", "Problemas Detectados", "Comentarios de Tarea"];
+        const rows = tasksData.map(t => [
+          t.item.site, t.item.integration, t.item.format, t.item.statusMsg, t.comment
+        ]);
+        triggerDownload(headers, rows, "publisher_tasks.csv");
+      }
+
+      function triggerDownload(headers, rows, filename) {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += headers.join(",") + "\n";
+        rows.forEach(row => {
+          let csvRow = row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",");
+          csvContent += csvRow + "\n";
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('Exportación iniciada', 'ok');
+      }
+
+      function showToast(msg, type = 'info') {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.className = 'fixed top-4 right-4 text-white text-sm px-4 py-3 rounded-lg shadow-lg z-50 transition-opacity';
+        
+        if (type === 'danger') t.classList.add('bg-danger');
+        else if (type === 'ok') t.classList.add('bg-ok');
+        else if (type === 'warn') t.classList.add('bg-warn');
+        else t.classList.add('bg-ink');
+        
+        t.classList.remove('hidden');
+        setTimeout(() => t.classList.add('hidden'), 3000);
+      }
+    });
+  </script>
+</body>
+</html>
