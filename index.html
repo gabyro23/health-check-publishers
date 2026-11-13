@@ -72,7 +72,7 @@ tailwind.config = {
       <div class="w-full md:w-1/3 flex flex-col gap-4">
         <div class="flex flex-col gap-1">
           <h2 class="text-base font-bold text-ink">1. Data Source</h2>
-          <p class="text-xs text-muted">Select the report type.</p>
+          <p class="text-xs text-muted">Select the report type before uploading to properly map columns.</p>
         </div>
         <div class="flex flex-col gap-1.5 mb-2">
           <label class="text-xs font-medium uppercase tracking-wide text-muted">Report Type</label>
@@ -590,28 +590,47 @@ tailwind.config = {
           });
         };
         
-        const intCol = findCol(['integration', 'integracion']) || headers[1];
-        const fmtCol = findCol(['size', 'format', 'formato']) || headers[2];
+        const intCol = findCol(['integration', 'integracion', 'placement', 'tag', 'adunit']) || headers[1];
+        const fmtCol = findCol(['size', 'format', 'formato', 'adsize']);
 
         const integrations = new Set();
         const formats = new Set();
 
         rawData.forEach(row => {
           if (row[intCol]) integrations.add(row[intCol]);
-          if (row[fmtCol]) formats.add(row[fmtCol]);
+          if (fmtCol && row[fmtCol]) formats.add(row[fmtCol]);
         });
 
         filterInt.innerHTML = '<option value="all">All</option>';
         [...integrations].sort().forEach(val => filterInt.innerHTML += `<option value="${val}">${val}</option>`);
 
-        filterFmt.innerHTML = '<option value="all">All</option>';
-        [...formats].sort().forEach(val => filterFmt.innerHTML += `<option value="${val}">${val}</option>`);
+        // Si no hay datos de formato, escondemos el filtro y las opciones de agrupación
+        if (formats.size === 0) {
+          filterFmt.closest('div').classList.add('hidden');
+          Array.from(selectGroupBy.options).forEach(opt => {
+            if (opt.value === 'format' || opt.value === 'int_format') opt.style.display = 'none';
+          });
+          // Resetear agrupación si estaba en una opción de formato
+          if (currentViewMode === 'format' || currentViewMode === 'int_format') {
+            selectGroupBy.value = 'none';
+            currentViewMode = 'none';
+          }
+        } else {
+          filterFmt.closest('div').classList.remove('hidden');
+          Array.from(selectGroupBy.options).forEach(opt => {
+            if (opt.value === 'format' || opt.value === 'int_format') opt.style.display = '';
+          });
+          filterFmt.innerHTML = '<option value="all">All</option>';
+          [...formats].sort().forEach(val => filterFmt.innerHTML += `<option value="${val}">${val}</option>`);
+        }
       }
 
       function updateResults() {
         if (!rawData || !rawData.length) return;
 
         const headers = Object.keys(rawData[0]);
+        
+        // Improved mapping for PSM and Admin structures
         const findCol = (keywords, exclude = []) => {
           return headers.find(h => {
             const clean = h.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -626,17 +645,17 @@ tailwind.config = {
         thCpm.innerText = isPSM ? 'eCPM' : 'Net CPM';
 
         const colMap = {
-          site: findCol(['site', 'publisher']),
-          int: findCol(['integration', 'integracion']),
-          fmt: findCol(['size', 'format', 'formato']),
-          avail: findCol(['available', 'availablerate']),
-          bid: findCol(['bidrate', 'bid']),
+          site: findCol(['site', 'publisher', 'domain', 'app']),
+          int: findCol(['integration', 'integracion', 'placement', 'tag', 'adunit']),
+          fmt: findCol(['size', 'format', 'formato', 'adsize']),
+          avail: findCol(['available', 'availablerate', 'availability']),
+          bid: findCol(['bidrate', 'bid', 'bids']),
           fill: findCol(['fillrate', 'fill']),
-          gReq: findCol(['grossrequests', 'grossreq', 'gross']),
-          req: findCol(['requests', 'reqs'], ['gross']),
+          gReq: findCol(['grossrequests', 'grossreq', 'gross', 'totalrequests']),
+          req: findCol(['requests', 'reqs', 'totaladrequests'], ['gross']),
           imps: findCol(['impressions', 'impresiones', 'imps']),
-          rev: isPSM ? findCol(['revenue', 'ingresos'], ['net']) : findCol(['netnetprice', 'price', 'netnetrevenue']),
-          cpm: isPSM ? findCol(['ecpm']) : findCol(['netnetcpm', 'cpm'], ['ecpm'])
+          rev: isPSM ? findCol(['publisherrevenue', 'revenue', 'ingresos'], ['net']) : findCol(['netnetprice', 'netnetrevenue', 'price', 'netrevenue']),
+          cpm: isPSM ? findCol(['publisherecpm', 'ecpm']) : findCol(['netnetcpm', 'netcpm', 'cpm'], ['ecpm', 'publisher'])
         };
 
         const tAvail = parseFloat(threshAvail.value) || 20;
@@ -796,6 +815,7 @@ tailwind.config = {
       function renderTable() {
         const fmtNum = (num) => new Intl.NumberFormat('en-US').format(num);
         const fmtCur = (num) => '$' + new Intl.NumberFormat('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(num);
+        const fmtCpm = (num) => '$' + new Intl.NumberFormat('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4}).format(num);
         const fmtPct = (num) => new Intl.NumberFormat('en-US', {maximumFractionDigits: 2}).format(num) + '%';
 
         const dataToRender = getFilteredAndSortedData();
@@ -860,7 +880,7 @@ tailwind.config = {
               <td class="px-4 py-3 text-right tabular-nums text-muted">${fmtNum(item.req)}</td>
               <td class="px-4 py-3 text-right tabular-nums text-muted">${fmtNum(item.imps)}</td>
               <td class="px-4 py-3 text-right tabular-nums text-muted">${fmtCur(item.rev)}</td>
-              <td class="px-4 py-3 text-right tabular-nums text-muted">${fmtCur(item.cpm)}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-muted">${fmtCpm(item.cpm)}</td>
             </tr>
           `;
         };
